@@ -5,9 +5,12 @@ export default function Home() {
       <main className="max-w-lg mx-auto px-6 py-20">
         {/* Hero Section */}
         <div className="mb-12">
-          <h1 className="text-4xl font-serif font-normal text-neutral-800 mb-8 leading-tight">
-            The Tidal Surf Collective
-          </h1>
+          <div className="flex items-center gap-4 mb-8">
+            <img src="/logo.svg" alt="Tidal Surf Logo" className="w-12 h-12" />
+            <h1 className="text-4xl font-serif font-normal text-neutral-800 leading-tight">
+              The Tidal Surf Collective
+            </h1>
+          </div>
           <div className="space-y-4">
             <p className="text-base text-neutral-600 leading-relaxed">
               We are the sunburnt romantics of silicon. Surfers of the synthetic tide. Code cowboys in pastel polos.
