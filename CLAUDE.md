@@ -49,3 +49,7 @@ Use `pnpm` for all package management operations. The project is configured with
 - ESLint with Next.js configuration
 - No test framework currently configured
 - React 19 and Next.js 15 used
+
+## Live Deployment
+
+- Deployed to https://tidal.surf
