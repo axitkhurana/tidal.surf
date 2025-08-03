@@ -1,7 +1,7 @@
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen beach-gradient">
       <main className="max-w-lg mx-auto px-6 py-20">
         {/* Hero Section */}
         <div className="mb-12">
@@ -13,7 +13,7 @@ export default function Home() {
               We are the sunburnt romantics of silicon. Surfers of the synthetic tide. Code cowboys in pastel polos.
             </p>
             <p className="text-base text-neutral-600 leading-relaxed">
-              We are <span className="text-blue-600">tidal.surf</span>, a collective of wanderers, weirdos, and wireheads who build AI for no reason other than we can—and because it feels like magic every time.
+              We are <a href="https://tidal.surf" className="text-cyan-600 hover:text-cyan-700">tidal.surf</a>, a collective of wanderers, weirdos, and wireheads who build AI for no reason other than we can—and because it feels like magic every time.
             </p>
             <p className="text-base text-neutral-600 leading-relaxed">
               No deadlines. No roadmaps. No pitch decks. Just vibes, breakthroughs, and browser tabs.
@@ -81,7 +81,7 @@ export default function Home() {
           <p className="text-base text-neutral-600 leading-relaxed mb-4">
             To ride the wave of intelligence with our shades on, building toys that feel like the future and smell like sunscreen.
           </p>
-          <p className="text-base text-blue-600 font-medium">
+          <p className="text-base text-cyan-600 font-medium">
             If it makes you smile, it&apos;s done.
           </p>
         </div>

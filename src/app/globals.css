@@ -37,3 +37,25 @@ body {
   line-height: 1.5;
   font-size: 16px;
 }
+
+@keyframes beachWave {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.beach-gradient {
+  background: linear-gradient(-45deg, 
+    #dbeafe, /* light blue */
+    #e0f7ff, /* sky blue */
+    #f0fdff, /* very light cyan */
+    #fef7ee, /* warm sand */
+    #e6fffa, /* aqua mint */
+    #dbeafe  /* back to light blue */
+  );
+  background-size: 400% 400%;
+  animation: beachWave 15s ease-in-out infinite;
+}
