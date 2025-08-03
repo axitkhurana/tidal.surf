@@ -36,8 +36,8 @@ export default function Home() {
             
             <div className="space-y-6">
               <div>
-                <h4 className="font-bold text-lg mb-2 text-gray-800 dark:text-gray-200">In Play > Productivity.</h4>
-                <p className="text-gray-600 dark:text-gray-400">Our demos may never ship, and that's perfectly divine. We're not shipping, we're drifting.</p>
+                <h4 className="font-bold text-lg mb-2 text-gray-800 dark:text-gray-200">In Play &gt; Productivity.</h4>
+                <p className="text-gray-600 dark:text-gray-400">Our demos may never ship, and that&apos;s perfectly divine. We&apos;re not shipping, we&apos;re drifting.</p>
               </div>
               
               <div>
@@ -51,14 +51,14 @@ export default function Home() {
                   A chatbot that only speaks like an 18th-century poet? Yes.<br/>
                   An AI that generates beach party invites in the style of Don Draper? Of course.
                 </p>
-                <p className="text-gray-600 dark:text-gray-400">We build what makes us laugh, gasp, or say "wait, what?"</p>
+                <p className="text-gray-600 dark:text-gray-400">We build what makes us laugh, gasp, or say &quot;wait, what?&quot;</p>
               </div>
               
               <div>
                 <h4 className="font-bold text-lg mb-2 text-gray-800 dark:text-gray-200">In Decentralized Delight.</h4>
                 <p className="text-gray-600 dark:text-gray-400">
                   No bosses. No KPIs. Just a group thread, late-night pushes, and someone saying:<br/>
-                  <em>"I hacked something dumb—wanna see?"</em>
+                  <em>&quot;I hacked something dumb—wanna see?&quot;</em>
                 </p>
               </div>
             </div>
@@ -94,7 +94,7 @@ export default function Home() {
                 building toys that feel like the future and smell like sunscreen.
               </p>
               <p className="font-semibold text-cyan-600 dark:text-cyan-400">
-                If it makes you smile, it's done.
+                If it makes you smile, it&apos;s done.
               </p>
             </div>
           </div>
@@ -108,8 +108,8 @@ export default function Home() {
             </div>
             <div className="mt-8 space-y-2">
               <p className="text-xl font-semibold text-gray-800 dark:text-gray-200">
-                We're not here to scale.<br/>
-                We're here to surf.
+                We&apos;re not here to scale.<br/>
+                We&apos;re here to surf.
               </p>
               <p className="text-lg text-cyan-600 dark:text-cyan-400 font-medium">
                 — tidal.surf 🌴

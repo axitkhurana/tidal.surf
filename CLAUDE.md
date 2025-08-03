@@ -16,6 +16,7 @@ Use `pnpm` for all package management operations. The project is configured with
 - `pnpm build` - Build static site (outputs to `./out` directory)  
 - `pnpm lint` - Run ESLint
 - `pnpm start` - Start production server (not typically used for static sites)
+- `pnpm run build` - Build after code changes with pnpm run build
 
 ## Architecture
 
@@ -53,3 +54,7 @@ Use `pnpm` for all package management operations. The project is configured with
 ## Live Deployment
 
 - Deployed to https://tidal.surf
+
+## Deployment Guidelines
+
+- Push to tidal.surf only when I explicitly ask to push
