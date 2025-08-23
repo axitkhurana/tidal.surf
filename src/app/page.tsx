@@ -102,7 +102,7 @@ export default function Home() {
               We&apos;re not here to scale. We&apos;re here to surf.
             </p>
             <p className="text-base text-neutral-500">
-              — tidal.surf
+              — <a href="mailto:hi@tidal.surf" className="text-cyan-600 hover:text-cyan-700">tidal.surf</a>
             </p>
           </div>
         </div>
