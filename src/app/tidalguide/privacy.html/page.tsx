@@ -7,8 +7,8 @@ export default function PrivacyPage() {
           <h1 className="text-4xl font-serif font-normal text-neutral-800 mt-3 mb-2">Privacy Policy</h1>
           <p className="text-sm text-neutral-500 mb-6">Effective date: 2026-01-13</p>
           <p className="text-base text-neutral-600 leading-relaxed mb-6">
-            TidalGuide ("we", "our", or "us") provides a location-based audio tour experience. This Privacy Policy explains
-            how we collect, use, and share information when you use the TidalGuide app (the "App").
+            TidalGuide (&quot;we&quot;, &quot;our&quot;, or &quot;us&quot;) provides a location-based audio tour experience. This Privacy Policy explains
+            how we collect, use, and share information when you use the TidalGuide app (the &quot;App&quot;).
           </p>
 
           <section className="space-y-4 mb-8">
