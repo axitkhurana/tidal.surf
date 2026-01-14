@@ -63,7 +63,7 @@ export default function PrivacyPage() {
           </section>
 
           <section className="space-y-4 mb-8">
-            <h2 className="text-xl font-serif text-neutral-800">Children's Privacy</h2>
+            <h2 className="text-xl font-serif text-neutral-800">Children&apos;s Privacy</h2>
             <p className="text-base text-neutral-600 leading-relaxed">
               The App is not intended for children under 13. We do not knowingly collect personal information from children.
             </p>
