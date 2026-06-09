@@ -26,6 +26,14 @@ pnpm build
 
 The static files will be output to the `./out` directory.
 
+## Blog
+
+The blog is generated statically from `src/lib/blog.ts`.
+
+- `/blog` lists all posts
+- `/blog/[slug]` is generated at build time with `generateStaticParams`
+- Add a post by adding a new object to the `blogPosts` array
+
 ## Deploy
 
 The site is automatically deployed to [tidal.surf](https://tidal.surf) via GitHub Actions when changes are pushed to the `main` branch.
