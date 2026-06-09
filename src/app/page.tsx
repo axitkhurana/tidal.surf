@@ -1,3 +1,4 @@
+import Link from "next/link";
 
 export default function Home() {
   return (
@@ -7,7 +8,7 @@ export default function Home() {
         <div className="mb-12">
           <div className="flex items-center gap-4 mb-8">
             <img src="/logo.svg" alt="Tidal Surf Logo" className="w-12 h-12" />
-            <h1 className="text-4xl font-serif font-normal text-neutral-800 leading-tight">
+            <h1 className="text-4xl font-serif font-medium text-neutral-800 leading-tight">
               The Tidal Surf Collective
             </h1>
           </div>
@@ -22,11 +23,17 @@ export default function Home() {
               No deadlines. No roadmaps. No pitch decks. Just vibes, breakthroughs, and browser tabs.
             </p>
           </div>
+          <Link
+            href="/blog"
+            className="mt-6 inline-flex text-sm font-semibold text-cyan-700 transition-colors hover:text-cyan-900"
+          >
+            Read the field notes
+          </Link>
         </div>
 
         {/* Beliefs Section */}
         <div className="mb-12">
-          <h2 className="text-xl font-serif font-normal text-neutral-800 mb-6">We Believe</h2>
+          <h2 className="text-xl font-serif font-medium text-neutral-800 mb-6">We Believe</h2>
           <div className="space-y-6">
             <div>
               <h3 className="font-semibold text-base text-neutral-800 mb-2">In Play &gt; Productivity</h3>
@@ -57,7 +64,7 @@ export default function Home() {
 
         {/* Stack Section */}
         <div className="mb-12">
-          <h2 className="text-xl font-serif font-normal text-neutral-800 mb-6">Our Stack</h2>
+          <h2 className="text-xl font-serif font-medium text-neutral-800 mb-6">Our Stack</h2>
           <div className="space-y-2">
             <div className="flex items-center text-base text-neutral-600">
               <span className="w-1 h-1 bg-neutral-400 rounded-full mr-3"></span>
@@ -80,7 +87,7 @@ export default function Home() {
 
         {/* Dream Section */}
         <div className="mb-12">
-          <h2 className="text-xl font-serif font-normal text-neutral-800 mb-6">Our Dream</h2>
+          <h2 className="text-xl font-serif font-medium text-neutral-800 mb-6">Our Dream</h2>
           <p className="text-base text-neutral-600 leading-relaxed mb-4">
             To ride the wave of intelligence with our shades on, building toys that feel like the future and smell like sunscreen.
           </p>
@@ -91,7 +98,7 @@ export default function Home() {
 
         {/* Join Section */}
         <div className="mb-12">
-          <h2 className="text-xl font-serif font-normal text-neutral-800 mb-6">Join the tide</h2>
+          <h2 className="text-xl font-serif font-medium text-neutral-800 mb-6">Join the tide</h2>
           <div className="space-y-2 mb-8">
             <p className="text-base text-neutral-600">Bring your weirdest repo.</p>
             <p className="text-base text-neutral-600">Your most beautiful idea with no market fit.</p>
