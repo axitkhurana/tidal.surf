@@ -1,0 +1,731 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agents Do Not Need More Memory. They Need Better State.</title>
+  <meta name="description" content="A compact explainer on agent memory as a state pipeline: write policy, store, retrieval policy, and validation loop.">
+  <style>
+    :root {
+      --paper: #f6f1e8;
+      --ink: #1b1a17;
+      --muted: #646057;
+      --line: #d8cfc0;
+      --panel: #fffaf0;
+      --panel-2: #ede7da;
+      --green: #476a56;
+      --red: #9b463d;
+      --blue: #355f7a;
+      --gold: #9a6b2f;
+      --code: #24221e;
+      --code-text: #f7efe2;
+      --shadow: 0 14px 34px rgba(43, 35, 25, .12);
+      --mono: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, monospace;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --serif: Georgia, "Times New Roman", serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(90deg, rgba(27,26,23,.035) 1px, transparent 1px) 0 0 / 32px 32px,
+        linear-gradient(0deg, rgba(27,26,23,.026) 1px, transparent 1px) 0 0 / 32px 32px,
+        var(--paper);
+      font-family: var(--sans);
+      line-height: 1.55;
+    }
+
+    a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    .shell { max-width: 1180px; margin: 0 auto; padding: 28px 22px 64px; }
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+      padding: 14px 0 24px;
+      border-bottom: 1px solid var(--line);
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .mark { color: var(--ink); font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+    .toplinks { display: flex; flex-wrap: wrap; gap: 12px; }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.08fr) minmax(320px, .72fr);
+      gap: 34px;
+      align-items: end;
+      padding: 58px 0 42px;
+    }
+    h1 {
+      margin: 0;
+      max-width: 900px;
+      font-family: var(--serif);
+      font-size: clamp(44px, 7vw, 92px);
+      line-height: .9;
+      letter-spacing: 0;
+    }
+    .dek {
+      max-width: 720px;
+      margin: 24px 0 0;
+      font-size: clamp(18px, 2vw, 24px);
+      line-height: 1.35;
+      color: #3d3931;
+    }
+    .hero-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      box-shadow: var(--shadow);
+      padding: 22px;
+    }
+    .equation {
+      margin: 0 0 16px;
+      font-family: var(--mono);
+      font-size: 15px;
+      line-height: 1.6;
+      color: var(--code-text);
+      background: var(--code);
+      border-radius: 6px;
+      padding: 18px;
+    }
+    .claim {
+      display: grid;
+      grid-template-columns: 36px 1fr;
+      gap: 12px;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+      font-size: 15px;
+      color: var(--muted);
+    }
+    .claim strong { color: var(--ink); }
+    .badge {
+      display: inline-grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--green);
+      color: #fff;
+      font-weight: 800;
+      font-size: 13px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 220px minmax(0, 1fr);
+      gap: 36px;
+      align-items: start;
+    }
+    nav {
+      position: sticky;
+      top: 18px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: rgba(255, 250, 240, .78);
+      backdrop-filter: blur(8px);
+      font-size: 13px;
+    }
+    nav a {
+      display: block;
+      padding: 7px 6px;
+      color: var(--muted);
+      text-decoration: none;
+      border-radius: 4px;
+    }
+    nav a:hover { background: var(--panel-2); color: var(--ink); }
+
+    main { min-width: 0; }
+    section {
+      padding: 36px 0;
+      border-top: 1px solid var(--line);
+    }
+    .section-head {
+      display: grid;
+      grid-template-columns: 58px 1fr;
+      gap: 18px;
+      align-items: baseline;
+      margin-bottom: 20px;
+    }
+    .num {
+      font-family: var(--mono);
+      color: var(--red);
+      font-size: 13px;
+      font-weight: 800;
+    }
+    h2 {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: clamp(30px, 4vw, 48px);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+    h3 { margin: 26px 0 10px; font-size: 19px; }
+    p { max-width: 760px; margin: 0 0 16px; }
+    .lead { font-size: 20px; line-height: 1.45; color: #3d3931; }
+    .kicker { color: var(--muted); font-size: 14px; }
+
+    .grid { display: grid; gap: 14px; }
+    .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 16px;
+    }
+    .card h3 { margin-top: 0; }
+    .small { font-size: 14px; color: var(--muted); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0 22px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      overflow: hidden;
+      font-size: 14px;
+    }
+    th, td {
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+      text-align: left;
+    }
+    th { background: #e8dfcf; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+    tr:last-child td { border-bottom: 0; }
+
+    pre {
+      margin: 16px 0 20px;
+      overflow-x: auto;
+      background: var(--code);
+      color: var(--code-text);
+      border-radius: 6px;
+      padding: 16px;
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    code { font-family: var(--mono); font-size: .94em; }
+
+    .pipeline {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 18px;
+      overflow-x: auto;
+      margin: 18px 0 20px;
+    }
+    .pipe-svg { min-width: 760px; display: block; }
+    .node { fill: #fffaf0; stroke: #6d6254; stroke-width: 1.4; }
+    .node-alt { fill: #e3eadf; stroke: var(--green); }
+    .arrow { fill: none; stroke: #6d6254; stroke-width: 1.6; marker-end: url(#arrow); }
+    .pipe-text { font: 700 12px var(--sans); fill: var(--ink); }
+
+    .tabs { margin-top: 18px; }
+    .tab-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .tab-buttons button {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 6px;
+      padding: 9px 12px;
+      font-weight: 700;
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .tab-buttons button[aria-selected="true"] {
+      background: var(--ink);
+      color: var(--paper);
+      border-color: var(--ink);
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .pull {
+      margin: 26px 0;
+      padding: 20px;
+      border-left: 4px solid var(--red);
+      background: rgba(255, 250, 240, .72);
+      font-family: var(--serif);
+      font-size: 25px;
+      line-height: 1.25;
+    }
+    .references {
+      columns: 2;
+      column-gap: 28px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .references li { break-inside: avoid; margin: 0 0 8px; }
+    .references a { overflow-wrap: anywhere; }
+
+    @media (max-width: 920px) {
+      .hero, .layout { grid-template-columns: 1fr; }
+      nav { position: static; }
+      .grid.two, .grid.three { grid-template-columns: 1fr; }
+      .references { columns: 1; }
+    }
+    @media (max-width: 560px) {
+      .shell { padding: 18px 14px 44px; }
+      .topbar { align-items: flex-start; flex-direction: column; }
+      .section-head { grid-template-columns: 1fr; gap: 4px; }
+      table {
+        table-layout: fixed;
+        width: 100%;
+        max-width: 100%;
+        white-space: normal;
+      }
+      th, td { overflow-wrap: anywhere; }
+      pre, .pipeline, .hero-card, .card, .pull { max-width: 100%; }
+      pre {
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+      .pipeline { overflow-x: hidden; }
+      .pipe-svg {
+        width: 100%;
+        min-width: 0;
+        height: auto;
+      }
+      .hero { padding-top: 34px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div><span class="mark">Agent Memory</span> / governed state, not storage</div>
+      <div class="toplinks">
+        <a href="#pipeline">Pipeline</a>
+        <a href="#system-details">Systems</a>
+        <a href="#lifecycle">Lifecycle</a>
+        <a href="#eval">Eval</a>
+        <a href="#references">References</a>
+      </div>
+    </header>
+
+    <section class="hero" aria-labelledby="title">
+      <div>
+        <h1 id="title">Agents Do Not Need More Memory. They Need Better State.</h1>
+        <p class="dek">The useful question is not whether an agent has memory. It is what state crosses the boundary between two runs, and why the next run should trust it.</p>
+      </div>
+      <aside class="hero-card">
+        <pre class="equation">agent memory =
+  write policy
++ store
++ retrieval policy
++ validation loop</pre>
+        <div class="claim">
+          <span class="badge">!</span>
+          <div><strong>The store is the least interesting term.</strong> Markdown, SQLite, vector search, graphs, mounted filesystems, and managed APIs can all work. The pipeline decides whether memory is useful.</div>
+        </div>
+      </aside>
+    </section>
+
+    <div class="layout">
+      <nav aria-label="Article navigation">
+        <a href="#split">01 Split the word</a>
+        <a href="#pipeline">02 The pipeline</a>
+        <a href="#authority">03 Authority</a>
+        <a href="#archetypes">04 Archetypes</a>
+        <a href="#system-details">05 System details</a>
+        <a href="#contract">06 Contract</a>
+        <a href="#lifecycle">07 Lifecycle</a>
+        <a href="#failures">08 Failure modes</a>
+        <a href="#eval">09 Evaluation</a>
+        <a href="#choose">10 What to use</a>
+        <a href="#checklist">11 Checklist</a>
+      </nav>
+
+      <main>
+        <section id="split">
+          <div class="section-head"><div class="num">01</div><h2>First, Split The Word</h2></div>
+          <p class="lead">Most memory discussions mix context, compaction, durable memory, and learning. They are different mechanisms with different failure modes.</p>
+          <table>
+            <thead><tr><th>Mechanism</th><th>What it means</th><th>Examples</th><th>Common failure</th></tr></thead>
+            <tbody>
+              <tr><td>Context</td><td>What the model sees now</td><td>prompt, files, tool output</td><td>too large or stale</td></tr>
+              <tr><td>Compaction</td><td>What survives context pressure</td><td>session summaries</td><td>lost intent</td></tr>
+              <tr><td>Durable memory</td><td>External state reused later</td><td>preferences, repo rules, skills</td><td>stale authority</td></tr>
+              <tr><td>Learning</td><td>Changed model or policy</td><td>weights, fine-tuning</td><td>usually not present</td></tr>
+            </tbody>
+          </table>
+          <pre>context pressure    = keep this run alive
+session continuity  = keep this task coherent
+durable memory      = change what a future run can know</pre>
+          <p>Do not use long-term memory to solve context overflow. Use compaction for that. Durable memory starts when the harness decides state should cross a session boundary.</p>
+        </section>
+
+        <section id="pipeline">
+          <div class="section-head"><div class="num">02</div><h2>The Pipeline</h2></div>
+          <p class="lead">A memory system is good only when a future action changes correctly, with source, scope, and deletion still intact.</p>
+          <div class="pipeline" role="img" aria-label="Memory pipeline from event to capture, extract, classify, scope, store, retrieve, inject, act, validate, and delete">
+            <svg class="pipe-svg" width="900" height="190" viewBox="0 0 900 190" xmlns="http://www.w3.org/2000/svg">
+              <defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#6d6254"/></marker></defs>
+              <path class="arrow" d="M90 58 H158"/><path class="arrow" d="M242 58 H310"/><path class="arrow" d="M394 58 H462"/><path class="arrow" d="M546 58 H614"/><path class="arrow" d="M698 58 H766"/>
+              <path class="arrow" d="M806 88 V135 H160 V102"/>
+              <g><rect class="node" x="22" y="28" width="72" height="60" rx="6"/><text class="pipe-text" x="58" y="63" text-anchor="middle">Event</text></g>
+              <g><rect class="node" x="158" y="28" width="86" height="60" rx="6"/><text class="pipe-text" x="201" y="63" text-anchor="middle">Capture</text></g>
+              <g><rect class="node" x="310" y="28" width="88" height="60" rx="6"/><text class="pipe-text" x="354" y="63" text-anchor="middle">Extract</text></g>
+              <g><rect class="node" x="462" y="28" width="90" height="60" rx="6"/><text class="pipe-text" x="507" y="56" text-anchor="middle">Classify</text><text class="pipe-text" x="507" y="72" text-anchor="middle">+ Scope</text></g>
+              <g><rect class="node-alt" x="614" y="28" width="88" height="60" rx="6"/><text class="pipe-text" x="658" y="63" text-anchor="middle">Store</text></g>
+              <g><rect class="node" x="766" y="28" width="92" height="60" rx="6"/><text class="pipe-text" x="812" y="56" text-anchor="middle">Retrieve</text><text class="pipe-text" x="812" y="72" text-anchor="middle">+ Inject</text></g>
+              <g><rect class="node" x="625" y="125" width="86" height="50" rx="6"/><text class="pipe-text" x="668" y="154" text-anchor="middle">Act</text></g>
+              <g><rect class="node" x="360" y="125" width="92" height="50" rx="6"/><text class="pipe-text" x="406" y="154" text-anchor="middle">Validate</text></g>
+              <g><rect class="node-alt" x="105" y="125" width="110" height="50" rx="6"/><text class="pipe-text" x="160" y="146" text-anchor="middle">Merge /</text><text class="pipe-text" x="160" y="162" text-anchor="middle">Delete</text></g>
+              <path class="arrow" d="M766 150 H715"/><path class="arrow" d="M625 150 H454"/><path class="arrow" d="M360 150 H218"/>
+            </svg>
+          </div>
+          <table>
+            <thead><tr><th>Stage</th><th>Decision</th><th>Bad default</th></tr></thead>
+            <tbody>
+              <tr><td>Capture</td><td>What is a candidate?</td><td>save everything</td></tr>
+              <tr><td>Extract/classify</td><td>What stable signal exists?</td><td>flatten into notes</td></tr>
+              <tr><td>Scope</td><td>user, repo, project, org, tool?</td><td>global memory</td></tr>
+              <tr><td>Retrieve/inject</td><td>what enters context now?</td><td>top-k similarity</td></tr>
+              <tr><td>Validate/delete</td><td>is it true, and where must it disappear?</td><td>trust old state</td></tr>
+            </tbody>
+          </table>
+          <div class="pull">Memory enters context only through retrieval policy. Memory changes action only after validation policy.</div>
+        </section>
+
+        <section id="authority">
+          <div class="section-head"><div class="num">03</div><h2>Authority</h2></div>
+          <p class="lead">A memory is not authoritative just because it is in context. Memory can suggest. Source of truth decides.</p>
+          <table>
+            <thead><tr><th>Source</th><th>Authority</th><th>Treatment</th></tr></thead>
+            <tbody>
+              <tr><td>Checked-in docs/code/config</td><td>High</td><td>source of truth</td></tr>
+              <tr><td>Cited current repo fact</td><td>High-medium</td><td>use with citation/branch validation</td></tr>
+              <tr><td>Human-authored memory</td><td>Medium</td><td>instruction or hint</td></tr>
+              <tr><td>Generated memory with source</td><td>Medium-low</td><td>validate before action</td></tr>
+              <tr><td>Generated memory without source</td><td>Low</td><td>hypothesis</td></tr>
+              <tr><td>Similar retrieved memory</td><td>Hint only</td><td>use to search, not decide</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section id="archetypes">
+          <div class="section-head"><div class="num">04</div><h2>How Systems Instantiate It</h2></div>
+          <table>
+            <thead><tr><th>Archetype</th><th>Shape</th><th>Examples</th><th>Failure to watch</th></tr></thead>
+            <tbody>
+              <tr><td>File-first</td><td>summary/index + files/grep</td><td>Claude Code, Codex, OpenClaw</td><td>index cliff</td></tr>
+              <tr><td>Frozen prompt + search</td><td>tiny profile + transcript search</td><td>Hermes</td><td>snapshot lag</td></tr>
+              <tr><td>Managed resource</td><td>mounted/API memory with versions</td><td>Anthropic Managed Agents, AgentCore</td><td>writable memory injection</td></tr>
+              <tr><td>Product memory</td><td>user/repo profile</td><td>ChatGPT, Gemini, Copilot, Devin</td><td>weak provenance</td></tr>
+              <tr><td>External semantic/graph</td><td>semantic search or graph traversal</td><td>Mem0, Zep, GBrain, Letta</td><td>governance sprawl</td></tr>
+            </tbody>
+          </table>
+          <div class="grid two">
+            <div class="card"><h3>File-first memory</h3><p>Claude Code and Codex keep memory inspectable in local Markdown. Codex writes with async extraction/consolidation and reads cheaply: summary first, keyword search next. Inspectable, but paraphrases can miss.</p></div>
+            <div class="card"><h3>Frozen prompt memory</h3><p>Hermes freezes tiny `MEMORY.md` and `USER.md` snapshots at session start. Great for prompt stability. Risky when writes persist to disk but do not affect the current turn.</p></div>
+            <div class="card"><h3>Managed memory</h3><p>Anthropic memory stores mount under `/mnt/memory/` with access modes, immutable versions, optimistic concurrency, and redaction. Dreams consolidate into a separate output store for review.</p></div>
+            <div class="card"><h3>Semantic and graph memory</h3><p>Mem0, Zep, GBrain, and Letta optimize recall across sessions and tools. They improve discovery but add places for stale facts, leaked scopes, and failed deletion to hide.</p></div>
+          </div>
+          <pre>RAG:          query -> top-k chunks -> answer
+graph memory: query -> retrieve -> connect -> synthesize -> cite -> expose gaps</pre>
+          <pre>external memory output = claim + citation + freshness + missing information</pre>
+        </section>
+
+        <section id="system-details">
+          <div class="section-head"><div class="num">05</div><h2>System Details</h2></div>
+          <p class="lead">The same pipeline shows up in different clothes. The useful comparison is not "who has memory"; it is what is always loaded, what is retrieved, how writes happen, and where governance breaks.</p>
+          <table>
+            <thead><tr><th>System</th><th>Mechanism</th><th>Detail worth preserving</th><th>Main risk</th></tr></thead>
+            <tbody>
+              <tr><td>Claude Code</td><td>file-first instructions + auto memory</td><td><code>CLAUDE.md</code> is human-authored instruction memory; auto memory uses repository-scoped Markdown with <code>MEMORY.md</code> as the startup index and topic files loaded on demand.</td><td>index cliff: the memory can exist on disk but become undiscoverable.</td></tr>
+              <tr><td>Codex</td><td>file-first generated memory</td><td>Writes are model-heavy and asynchronous: extraction first, consolidation later. Reads are cheap: inject a bounded summary, then ask the agent to search files such as <code>MEMORY.md</code>, rollout summaries, and skills only when useful.</td><td>write/read asymmetry can hide stale paraphrases.</td></tr>
+              <tr><td>OpenClaw</td><td>workspace Markdown + live context inspection</td><td>Uses durable <code>MEMORY.md</code>, daily notes, optional <code>DREAMS.md</code>, hybrid <code>memory_search</code>, compaction, memory flush before compaction, and <code>/context list</code> / <code>/context detail</code> to show what actually loaded.</td><td>confusing disk memory with live prompt context.</td></tr>
+              <tr><td>Hermes</td><td>tiny frozen prompt + search</td><td><code>MEMORY.md</code> is limited to 2,200 characters; <code>USER.md</code> to 1,375. Both are frozen at session start. Detail moves to SQLite FTS session search or one active external provider.</td><td>snapshot lag after writes.</td></tr>
+              <tr><td>Anthropic Managed Agents</td><td>mounted governed resource</td><td>Memory stores mount under <code>/mnt/memory/</code>, support read-only/read-write access, optimistic concurrency, immutable versions, redaction, 100 kB memories, 2,000 memories per store, and up to 8 stores per session.</td><td>writable memory can persist prompt injection.</td></tr>
+              <tr><td>Anthropic Dreams</td><td>async consolidation job</td><td>Dreams read one memory store plus 1 to 100 sessions, then produce a separate output memory store for review, attach, archive, or delete. The input store is not silently mutated.</td><td>unsafe consolidation if candidate state becomes live without review.</td></tr>
+              <tr><td>Mem0 v3</td><td>external scoped semantic memory</td><td>Async ADD-only extraction writes to scoped stores such as <code>user_id</code>, <code>agent_id</code>, <code>app_id</code>, or <code>run_id</code>. Entity linking and multi-signal retrieval move recall outside the harness.</td><td>governance sprawl across stores and identities.</td></tr>
+              <tr><td>GBrain</td><td>hybrid graph retrieval</td><td>Combines vector search for paraphrase, BM25 for exact names, graph traversal for relationships, source ranking for authority, and reranking for false positives.</td><td>graph edges can amplify stale or weakly sourced claims.</td></tr>
+              <tr><td>Copilot / Devin / Gemini</td><td>product memory</td><td>Memory is product-mediated user or repo profile state: repository facts, saved preferences, knowledge items, generated wiki/search, and controls around viewing or disabling remembered data.</td><td>weak provenance unless citations, expiry, and user controls are explicit.</td></tr>
+              <tr><td>AgentCore / Letta / Zep</td><td>managed or OS-style memory</td><td>These systems make the state layer explicit: namespaces, long-term strategies, tiered memory, archival recall, and temporal graph structure.</td><td>more structure means more deletion, privacy, and audit surfaces.</td></tr>
+            </tbody>
+          </table>
+          <pre>Anthropic Dreams safety shape:
+input memory store + 1..100 sessions
+  -> async dream
+  -> separate output memory store
+  -> review / attach / archive / delete
+
+The input store is not mutated. Consolidation produces candidate state, not silent live-state edits.</pre>
+        </section>
+
+        <section id="contract">
+          <div class="section-head"><div class="num">06</div><h2>The Contract</h2></div>
+          <p class="lead">Start with the contract, not the database. `no_op` should be common. Most events should not become memory.</p>
+          <div class="tabs">
+            <div class="tab-buttons" role="tablist">
+              <button type="button" role="tab" aria-selected="true" aria-controls="panel-contract" data-tab="contract">Contract</button>
+              <button type="button" role="tab" aria-selected="false" aria-controls="panel-record" data-tab="record">Record</button>
+              <button type="button" role="tab" aria-selected="false" aria-controls="panel-lifecycle" data-tab="lifecycle">Lifecycle</button>
+            </div>
+            <div id="panel-contract" class="tab-panel active" role="tabpanel" data-panel="contract">
+              <pre>propose(event) -> candidate | null
+write(candidate, scope, source) -> memory_id | no_op
+retrieve(task, scope) -> ranked memories
+validate(memory, task) -> trusted | stale | conflict | hint
+inject(memory, mode) -> prompt text with source/authority
+update(memory_id, source) -> new version
+delete(memory_id) -> tombstone + derived cleanup
+explain(memory_id) -> source, scope, versions, retrieval path</pre>
+            </div>
+            <div id="panel-record" class="tab-panel" role="tabpanel" data-panel="record" hidden>
+              <pre>type: rule | fact | preference | episode | skill | hypothesis
+scope: user | repo | project | org | tool
+source: citation_or_event_id
+content: "Deployments happen from main only after pnpm build passes."
+confidence: high | medium | low
+last_validated_at: timestamp
+expires_at: timestamp | null
+access: private | shared | read_only | read_write
+valid_when: "task involves deploy/release/push"
+contradicts: [...]</pre>
+            </div>
+            <div id="panel-lifecycle" class="tab-panel" role="tabpanel" data-panel="lifecycle" hidden>
+              <table>
+                <thead><tr><th>Step</th><th>Decision</th><th>Result</th></tr></thead>
+                <tbody>
+                  <tr><td>Capture</td><td>durable operational constraint</td><td>candidate</td></tr>
+                  <tr><td>Extract</td><td>deploy requires <code>main</code> + <code>pnpm build</code></td><td>normalized rule</td></tr>
+                  <tr><td>Classify</td><td>repo rule, not user preference</td><td>`type: rule`, `scope: repo`</td></tr>
+                  <tr><td>Store</td><td>save source/confidence/validation path</td><td>memory record</td></tr>
+                  <tr><td>Retrieve</td><td>task mentions release/deploy/push</td><td>load deploy rules</td></tr>
+                  <tr><td>Validate</td><td>check package scripts, CI, docs</td><td>cite or downgrade</td></tr>
+                  <tr><td>Act</td><td>block unsafe deploy, run build</td><td>changed behavior</td></tr>
+                  <tr><td>Update</td><td>deploy process changes</td><td>stale old rule, add new rule</td></tr>
+                  <tr><td>Delete</td><td>user asks to forget</td><td>remove record + derived summaries</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section id="lifecycle">
+          <div class="section-head"><div class="num">07</div><h2>One Lifecycle</h2></div>
+          <p class="lead">A memory is not the sentence the user said. It is the normalized state that survives with type, scope, source, validation path, and deletion behavior.</p>
+          <div class="grid two">
+            <div>
+              <h3>Raw Event</h3>
+              <pre>User: "Remember, this repo deploys from main only after pnpm build passes."</pre>
+            </div>
+            <div>
+              <h3>Bad Memory</h3>
+              <pre>User prefers pnpm build.</pre>
+            </div>
+          </div>
+          <p>That bad memory turns a repo deployment rule into a vague user preference. The narrow policy should look more like this:</p>
+          <pre>if task involves deploy/release/push:
+  retrieve repo deployment rules
+  validate against checked-in source
+  cite before acting</pre>
+          <table>
+            <thead><tr><th>Step</th><th>Decision</th><th>Result</th></tr></thead>
+            <tbody>
+              <tr><td>Capture</td><td>durable operational constraint</td><td>candidate</td></tr>
+              <tr><td>Extract</td><td>deploy requires <code>main</code> + <code>pnpm build</code></td><td>normalized rule</td></tr>
+              <tr><td>Classify</td><td>repo rule, not user preference</td><td><code>type: rule</code>, <code>scope: repo</code></td></tr>
+              <tr><td>Store</td><td>save source, confidence, validation path</td><td>memory record</td></tr>
+              <tr><td>Retrieve</td><td>task mentions release/deploy/push</td><td>load deploy rules</td></tr>
+              <tr><td>Validate</td><td>check package scripts, CI, docs</td><td>cite or downgrade</td></tr>
+              <tr><td>Act</td><td>block unsafe deploy, run build</td><td>changed behavior</td></tr>
+              <tr><td>Update</td><td>deploy process changes</td><td>stale old rule, add new rule</td></tr>
+              <tr><td>Delete</td><td>user asks to forget</td><td>remove record + derived summaries</td></tr>
+            </tbody>
+          </table>
+          <div class="pull">The point is not that the agent remembered the sentence. It preserved type, scope, source, validation path, and changed a future action correctly.</div>
+        </section>
+
+        <section id="failures">
+          <div class="section-head"><div class="num">08</div><h2>Failure Modes</h2></div>
+          <table>
+            <thead><tr><th>Failure</th><th>Symptom</th><th>Root cause</th><th>Mitigation</th></tr></thead>
+            <tbody>
+              <tr><td>Index cliff</td><td>memory exists but is never opened</td><td>capped/stale index</td><td>test lookup paths</td></tr>
+              <tr><td>Undiscoverability</td><td>search misses it</td><td>lexical mismatch, vague names, missing edge</td><td>hybrid retrieval, aliases</td></tr>
+              <tr><td>Loaded-state confusion</td><td>file exists, model did not see it</td><td>store is confused with context</td><td>context inspection</td></tr>
+              <tr><td>Snapshot lag</td><td>write persists but not this turn</td><td>frozen prompt</td><td>expose effective time</td></tr>
+              <tr><td>Stale authority</td><td>old rule wins</td><td>no validation</td><td>source-of-truth checks</td></tr>
+              <tr><td>Poisoned memory</td><td>attack persists</td><td>untrusted write access</td><td>read-only stores, scanners, quoting</td></tr>
+              <tr><td>Scope leak</td><td>memory crosses users/orgs</td><td>weak identity model</td><td>namespaces + leakage tests</td></tr>
+              <tr><td>Delete failure</td><td>deleted fact returns</td><td>derived summaries/indexes survive</td><td>delete across stores</td></tr>
+              <tr><td>Over-consolidation</td><td>nuance disappears</td><td>summaries merge contradictions</td><td>candidate store + review</td></tr>
+            </tbody>
+          </table>
+          <pre>wrong thing written
+right thing not found
+found thing trusted too much</pre>
+          <p>Design reviews should force every memory feature through those three cases before it ships.</p>
+        </section>
+
+        <section id="eval">
+          <div class="section-head"><div class="num">09</div><h2>Evaluation</h2></div>
+          <p class="lead">Bad benchmark: did the agent remember the favorite color? Better benchmark: did yesterday's experience change today's decision correctly?</p>
+          <table>
+            <thead><tr><th>Session</th><th>Test</th></tr></thead>
+            <tbody>
+              <tr><td>S1</td><td>Teach a repo rule with source</td></tr>
+              <tr><td>S2</td><td>Ask unrelated task; memory should not distract</td></tr>
+              <tr><td>S3</td><td>Ask task where rule matters; memory should change action</td></tr>
+              <tr><td>S4</td><td>Contradict/update rule</td></tr>
+              <tr><td>S5</td><td>Ask again; current rule should win</td></tr>
+              <tr><td>S6</td><td>Delete rule</td></tr>
+              <tr><td>S7</td><td>Ask again; deleted rule should not resurface</td></tr>
+            </tbody>
+          </table>
+          <div class="grid three">
+            <div class="card"><h3>Pass</h3><p>Memory improves the relevant action and does not distract unrelated actions.</p></div>
+            <div class="card"><h3>Update</h3><p>New memory beats old memory when the source changes.</p></div>
+            <div class="card"><h3>Delete</h3><p>Deleted memory does not reappear through summaries, embeddings, or derived notes.</p></div>
+          </div>
+          <pre>score =
+  action correctness
++ citation validity
++ stale recall resistance
++ deletion correctness
++ false-positive rate
++ latency/token cost
++ cross-scope leakage tests</pre>
+          <p>MemoryArena is useful because it couples memory with action. Stompy's coding-agent benchmark is useful because it reports a modest result: memory reduced exploration on harder tasks, did not materially improve code quality, and hurt trivial tasks. Memory helps when rediscovery is expensive.</p>
+        </section>
+
+        <section id="choose">
+          <div class="section-head"><div class="num">10</div><h2>What Should I Use?</h2></div>
+          <table>
+            <thead><tr><th>Need</th><th>Use</th><th>Avoid</th></tr></thead>
+            <tbody>
+              <tr><td>Team rules, commands, constraints</td><td>checked-in docs</td><td>generated memory</td></tr>
+              <tr><td>User preferences</td><td>product/user memory with controls</td><td>repo memory</td></tr>
+              <tr><td>Task continuity</td><td>compaction/session summaries</td><td>long-term memory</td></tr>
+              <tr><td>Current codebase facts</td><td>cited repo facts or regenerated docs</td><td>uncited semantic notes</td></tr>
+              <tr><td>Long-lived research context</td><td>hybrid search or graph memory</td><td>one prompt-loaded file</td></tr>
+              <tr><td>Cross-tool recall</td><td>external provider/MCP with scopes</td><td>copied local folders</td></tr>
+              <tr><td>Enterprise audit/isolation</td><td>managed memory with namespaces and versions</td><td>informal files</td></tr>
+              <tr><td>Relationship/time-heavy facts</td><td>temporal graph</td><td>plain chunks</td></tr>
+            </tbody>
+          </table>
+          <pre>rules in repo docs
+small summary in prompt
+details retrieved on demand
+sources attached to claims
+writes scoped by identity/project
+delete path tested</pre>
+          <div class="pull">Agents do not need “more memory” in the abstract. They need better state.</div>
+        </section>
+
+        <section id="checklist">
+          <div class="section-head"><div class="num">11</div><h2>Checklist</h2></div>
+          <p class="lead">Before adding memory, answer these questions. If the answers are vague, the system has retrieval, not memory architecture.</p>
+          <table>
+            <thead><tr><th>#</th><th>Question</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>What memory types exist?</td></tr>
+              <tr><td>2</td><td>Which events can create memory?</td></tr>
+              <tr><td>3</td><td>Which writes require approval?</td></tr>
+              <tr><td>4</td><td>What is always injected vs retrieved on demand?</td></tr>
+              <tr><td>5</td><td>What is the source of authority?</td></tr>
+              <tr><td>6</td><td>How are stale memories detected?</td></tr>
+              <tr><td>7</td><td>How are contradictions represented?</td></tr>
+              <tr><td>8</td><td>What is the delete path?</td></tr>
+              <tr><td>9</td><td>What eval proves memory improves action?</td></tr>
+              <tr><td>10</td><td>How can the operator inspect what loaded this turn?</td></tr>
+              <tr><td>11</td><td>Do writes affect the current prompt or the next snapshot?</td></tr>
+              <tr><td>12</td><td>Are memories scanned for prompt-injection or exfiltration before becoming prompt text?</td></tr>
+            </tbody>
+          </table>
+          <p>The model is mostly stateless. The harness is becoming the runtime. Memory is the state layer of that runtime.</p>
+        </section>
+
+        <section id="references">
+          <div class="section-head"><div class="num">12</div><h2>References</h2></div>
+          <ol class="references">
+            <li>Local pasted research notes used during drafting: mem0 State of Memory in Agent Harness; Troy Hua Claude Code memory-source analysis; mem0 Codex CLI memory-source analysis; mem0 Hermes memory source/vendor notes.</li>
+            <li><a href="https://github.com/garrytan/gbrain/">GBrain repo</a></li>
+            <li><a href="https://raw.githubusercontent.com/garrytan/gbrain/master/llms.txt">GBrain llms.txt</a></li>
+            <li><a href="https://raw.githubusercontent.com/garrytan/gbrain/master/INSTALL_FOR_AGENTS.md">GBrain install guide for agents</a></li>
+            <li><a href="https://raw.githubusercontent.com/garrytan/gbrain/master/docs/architecture/RETRIEVAL.md">GBrain retrieval architecture</a></li>
+            <li><a href="https://raw.githubusercontent.com/garrytan/gbrain/master/docs/architecture/topologies.md">GBrain deployment topologies</a></li>
+            <li><a href="https://code.claude.com/docs/en/memory">Claude Code memory docs</a></li>
+            <li><a href="https://platform.claude.com/docs/en/managed-agents/memory">Anthropic Managed Agents memory docs</a></li>
+            <li><a href="https://platform.claude.com/docs/en/managed-agents/dreams">Anthropic Managed Agents Dreams</a></li>
+            <li><a href="https://developers.openai.com/codex/memories">Codex memories</a></li>
+            <li><a href="https://developers.openai.com/codex/guides/agents-md">Codex AGENTS.md</a></li>
+            <li><a href="https://github.com/openai/codex/blob/main/codex-rs/core/src/memories/README.md">Codex memories README</a></li>
+            <li><a href="https://github.com/openai/codex/blob/main/codex-rs/core/templates/memories/read_path.md">Codex memory read path prompt</a></li>
+            <li><a href="https://github.com/openai/codex/blob/main/codex-rs/core/src/memories/prompts.rs">Codex memory prompt builder</a></li>
+            <li><a href="https://github.com/openai/codex/blob/main/codex-rs/core/config.schema.json">Codex config schema</a></li>
+            <li><a href="https://mem0.ai/blog/openclaw-memory-management-live-data-compaction-and-best-practices">Mem0: OpenClaw Memory Management</a></li>
+            <li><a href="https://docs.openclaw.ai/concepts/memory">OpenClaw memory overview</a></li>
+            <li><a href="https://docs.openclaw.ai/concepts/compaction">OpenClaw compaction docs</a></li>
+            <li><a href="https://docs.openclaw.ai/concepts/context">OpenClaw context docs</a></li>
+            <li><a href="https://docs.openclaw.ai/reference/memory-config">OpenClaw memory config reference</a></li>
+            <li><a href="https://docs.mem0.ai/integrations/openclaw">Mem0 OpenClaw integration docs</a></li>
+            <li><a href="https://docs.mem0.ai/integrations/codex">Mem0 Codex integration docs</a></li>
+            <li><a href="https://docs.mem0.ai/api-reference/memory/add-memories">Mem0 v3 add memories</a></li>
+            <li><a href="https://docs.mem0.ai/migration/platform-v2-to-v3">Mem0 v2 to v3 migration</a></li>
+            <li><a href="https://mem0.ai/research">Mem0 research</a></li>
+            <li><a href="https://help.openai.com/en/articles/8590148-memory-faq">OpenAI Memory FAQ</a></li>
+            <li><a href="https://developers.openai.com/cookbook/examples/agents_sdk/context_personalization">OpenAI context personalization cookbook</a></li>
+            <li><a href="https://developers.openai.com/api/docs/guides/compaction">OpenAI compaction guide</a></li>
+            <li><a href="https://docs.github.com/en/copilot/concepts/agents/copilot-memory">GitHub Copilot Memory</a></li>
+            <li><a href="https://support.google.com/gemini/answer/15637730">Gemini Apps saved info</a></li>
+            <li><a href="https://aws.amazon.com/bedrock/agentcore/faqs/">AWS AgentCore FAQ</a></li>
+            <li><a href="https://aws.amazon.com/blogs/machine-learning/building-smarter-ai-agents-agentcore-long-term-memory-deep-dive/">AWS AgentCore Memory deep dive</a></li>
+            <li><a href="https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/long-term-configuring-built-in-strategies.html">AWS AgentCore built-in memory strategies</a></li>
+            <li><a href="https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/harness-memory.html">AWS AgentCore harness memory</a></li>
+            <li><a href="https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/memory-organization.html">AWS AgentCore memory organization</a></li>
+            <li><a href="https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/long-term-saving-and-retrieving-insights.html">AWS AgentCore save/retrieve insights</a></li>
+            <li><a href="https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/long-term-redrive.html">AWS AgentCore redrive failed ingestions</a></li>
+            <li><a href="https://docs.devin.ai/product-guides/knowledge">Devin Knowledge</a></li>
+            <li><a href="https://docs.devin.ai/work-with-devin/deepwiki">Devin DeepWiki</a></li>
+            <li><a href="https://hermes-agent.ai/features/persistent-memory">Hermes Agent persistent memory</a></li>
+            <li><a href="https://vectorize.io/articles/hermes-agent-memory-explained">Vectorize: How Hermes Agent Memory Actually Works</a></li>
+            <li><a href="https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/memory.md">Hermes memory docs</a></li>
+            <li><a href="https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/memory-providers.md">Hermes memory providers docs</a></li>
+            <li><a href="https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/skills.md">Hermes skills docs</a></li>
+            <li><a href="https://github.com/NousResearch/hermes-agent/blob/main/agent/memory_provider.py">Hermes memory provider interface</a></li>
+            <li><a href="https://github.com/NousResearch/hermes-agent/blob/main/agent/memory_manager.py">Hermes memory manager</a></li>
+            <li><a href="https://docs.mem0.ai/integrations/hermes">Mem0 Hermes integration docs</a></li>
+            <li><a href="https://github.com/garrytan/gbrain-evals">GBrain evals</a></li>
+            <li><a href="https://arxiv.org/abs/2310.08560">MemGPT</a></li>
+            <li><a href="https://docs.letta.com/guides/core-concepts/memory/archival-memory/">Letta archival memory</a></li>
+            <li><a href="https://docs.letta.com/guides/core-concepts/memory/context-hierarchy/">Letta context hierarchy</a></li>
+            <li><a href="https://docs.langchain.com/oss/javascript/deepagents/memory">LangChain Deep Agents memory</a></li>
+            <li><a href="https://arxiv.org/abs/2501.13956">Zep temporal knowledge graph paper</a></li>
+            <li><a href="https://arxiv.org/abs/2603.07670">Memory for Autonomous LLM Agents</a></li>
+            <li><a href="https://arxiv.org/abs/2604.27707">Contextual Agentic Memory is a Memo, Not True Memory</a></li>
+            <li><a href="https://arxiv.org/abs/2602.16313">MemoryArena</a></li>
+            <li><a href="https://arxiv.org/abs/2602.19320">Anatomy of Agentic Memory</a></li>
+            <li><a href="https://www.stompy.ai/pro">Stompy coding-agent memory benchmark</a></li>
+          </ol>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const buttons = document.querySelectorAll('[data-tab]');
+    const panels = document.querySelectorAll('[data-panel]');
+    buttons.forEach((button) => {
+      button.addEventListener('click', () => {
+        const tab = button.dataset.tab;
+        buttons.forEach((item) => item.setAttribute('aria-selected', String(item === button)));
+        panels.forEach((panel) => {
+          const isActive = panel.dataset.panel === tab;
+          panel.classList.toggle('active', isActive);
+          panel.hidden = !isActive;
+        });
+      });
+    });
+  </script>
+</body>
+</html>
